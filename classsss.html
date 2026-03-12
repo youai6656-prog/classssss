@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能课表导入系统 Pro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f2f2f7;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+            width: 100%;
+            max-width: 420px;
+        }
+        h1 {
+            font-size: 24px;
+            color: #1c1c1e;
+            margin-top: 0;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .form-group { margin-bottom: 20px; }
+        label {
+            display: block;
+            font-size: 14px;
+            color: #8e8e93;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        input[type="date"] {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #e5e5ea;
+            border-radius: 12px;
+            font-size: 16px;
+            box-sizing: border-box;
+            outline: none;
+            background-color: #fafafa;
+        }
+        .upload-area {
+            border: 2px dashed #007aff;
+            background-color: #f0f8ff;
+            border-radius: 16px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        .upload-area:active { background-color: #e0f0ff; }
+        .upload-area input[type="file"] {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0; left: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+        .upload-icon { font-size: 32px; margin-bottom: 10px; }
+        .upload-text { color: #007aff; font-weight: 600; font-size: 17px; }
+        .tips {
+            font-size: 12px;
+            color: #8e8e93;
+            margin-top: 10px;
+            line-height: 1.5;
+        }
+        #statusArea {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 12px;
+            background-color: #f2f2f7;
+            font-size: 14px;
+            color: #1c1c1e;
+            display: none;
+        }
+        .preview-list {
+            text-align: left;
+            font-size: 13px;
+            max-height: 150px;
+            overflow-y: auto;
+            margin-top: 10px;
+            padding-left: 20px;
+            color: #333;
+            background: #fff;
+            padding-top: 10px;
+            padding-bottom: 10px;
+            border-radius: 8px;
+            border: 1px solid #e5e5ea;
+        }
+        #generateBtn {
+            background-color: #007aff;
+            color: white;
+            border: none;
+            padding: 16px 24px;
+            border-radius: 14px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+        }
+        #generateBtn:active { transform: scale(0.98); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>一键导入 iPhone 日历</h1>
+    
+    <div class="form-group">
+        <label for="semesterStart">第一周的星期一是哪天？</label>
+        <input type="date" id="semesterStart" value="2026-03-02">
+    </div>
+
+    <div class="upload-area">
+        <div class="upload-icon">📄</div>
+        <div class="upload-text">选择或拖拽 课表文件</div>
+        <div class="tips">支持 Excel (.xlsx) 或 CSV 格式</div>
+        <input type="file" id="fileInput" accept=".xlsx, .xls, .csv">
+    </div>
+    
+    <div id="statusArea"></div>
+    <button id="generateBtn">自动转化并导入日历</button>
+</div>
+
+<script>
+    let parsedEvents = [];
+    const statusArea = document.getElementById('statusArea');
+    const generateBtn = document.getElementById('generateBtn');
+
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        statusArea.style.display = 'block';
+        statusArea.innerHTML = "正在智能解析表格数据，请稍候...";
+        generateBtn.style.display = 'none';
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+            const grid = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ""});
+            
+            parsedEvents = autoExtractEvents(grid);
+            
+            if(parsedEvents.length > 0) {
+                // 渲染预览列表，方便用户直观检查周次是否正确
+                let previewHtml = `✅ <b>解析成功！共识别 ${parsedEvents.length} 门课：</b><ul class="preview-list">`;
+                parsedEvents.forEach(evt => {
+                    previewHtml += `<li><b>${evt.name}</b>：第 ${evt.startWeek} 到 ${evt.endWeek} 周</li>`;
+                });
+                previewHtml += `</ul>`;
+                statusArea.innerHTML = previewHtml;
+                generateBtn.style.display = 'block';
+            } else {
+                statusArea.innerHTML = `❌ <b>解析失败</b><br>未能从表格中识别出带有“时间”和“星期”的有效课程。`;
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    });
+
+    // 超级强化的周次提取器
+    function extractWeeks(text) {
+        // 匹配各种奇葩连字符：1-16周, 1~16周, 1—16, 1至16周, 第1-16周, [1-16]
+        const weekRegexList = [
+            /(\d+)\s*[-~—–至]\s*(\d+)\s*周/,    // 标准带周字
+            /\[(\d+)\s*[-~—–至]\s*(\d+)\]/,       // 中括号包含
+            /(?:第)?(\d+)\s*[-~—–至]\s*(\d+)/     // 裸露的数字加连字符
+        ];
+
+        for (let regex of weekRegexList) {
+            let match = text.match(regex);
+            if (match) {
+                // 防误判机制：如果是时间(08:00)或者节次(1-2节)，则跳过
+                let matchedStr = match[0];
+                if (matchedStr.includes(":") || matchedStr.includes("节")) {
+                    continue; 
+                }
+                return { start: parseInt(match[1]), end: parseInt(match[2]), matchedStr };
+            }
+        }
+        // 如果实在死活找不到，默认返回 1-16
+        return { start: 1, end: 16, matchedStr: "" };
+    }
+
+    function autoExtractEvents(grid) {
+        let events = [];
+        let dayCols = {};
+        let timeRows = {};
+        const dayMap = {"一":0, "二":1, "三":2, "四":3, "五":4, "六":5, "日":6};
+
+        for(let r = 0; r < grid.length; r++) {
+            for(let c = 0; c < grid[r].length; c++) {
+                let cell = String(grid[r][c]).trim();
+                if(!cell) continue;
+
+                let dayMatch = cell.match(/(?:星期|周)(一|二|三|四|五|六|日)/);
+                if(dayMatch && !dayCols[c] && cell.length < 10) dayCols[c] = dayMap[dayMatch[1]];
+
+                let timeMatch = cell.match(/(\d{1,2}:\d{2})\s*(?:-|~|—)\s*(\d{1,2}:\d{2})/);
+                if(timeMatch && !timeRows[r]) {
+                    timeRows[r] = { start: timeMatch[1].padStart(5, '0'), end: timeMatch[2].padStart(5, '0') };
+                }
+            }
+        }
+
+        const isMatrix = Object.keys(dayCols).length >= 3 && Object.keys(timeRows).length >= 3;
+
+        if (isMatrix) {
+            for(let r in timeRows) {
+                for(let c in dayCols) {
+                    let cell = String(grid[r][c]).trim();
+                    if(!cell || cell.match(/^(星期|周)/) || cell.match(/^\d{1,2}:\d{2}/)) continue;
+
+                    let courses = cell.split(/\n\s*\n|---+/); 
+                    courses.forEach(courseStr => {
+                        let lines = courseStr.split('\n').map(s=>s.trim()).filter(s=>s);
+                        if(lines.length < 1) return;
+
+                        let name = lines[0];
+                        let weekData = extractWeeks(courseStr);
+                        
+                        let teacher = "", loc = "";
+                        lines.slice(1).forEach(line => {
+                            if(line.includes("老师") || line.includes("教授")) teacher = line;
+                            else if(!weekData.matchedStr || !line.includes(weekData.matchedStr)) loc = line;
+                        });
+
+                        events.push({ name, dayOffset: dayCols[c], startTime: timeRows[r].start, endTime: timeRows[r].end, startWeek: weekData.start, endWeek: weekData.end, teacher, location: loc });
+                    });
+                }
+            }
+        } else {
+            for(let r = 0; r < grid.length; r++) {
+                let rowText = grid[r].map(v => String(v).trim()).join(" ");
+                if(!rowText) continue;
+
+                let dayMatch = rowText.match(/(?:星期|周)(一|二|三|四|五|六|日)/);
+                let timeMatch = rowText.match(/(\d{1,2}:\d{2})\s*(?:-|~|—)\s*(\d{1,2}:\d{2})/);
+                
+                if(dayMatch && timeMatch) {
+                    let dayOffset = dayMap[dayMatch[1]];
+                    let startTime = timeMatch[1].padStart(5, '0');
+                    let endTime = timeMatch[2].padStart(5, '0');
+
+                    let weekData = extractWeeks(rowText);
+
+                    let cleanText = rowText.replace(dayMatch[0], '').replace(timeMatch[0], '').replace(weekData.matchedStr, '').replace(/[{}]/g, '');
+                    let parts = cleanText.split(/[\s,，]+/).filter(s=>s);
+                    
+                    let name = parts[0] || "未命名课程";
+                    let teacher = parts.find(p => p.includes("老师") || p.includes("教授")) || "";
+                    let loc = parts.find(p => p !== name && p !== teacher) || "";
+
+                    events.push({ name, dayOffset, startTime, endTime, startWeek: weekData.start, endWeek: weekData.end, teacher, location: loc });
+                }
+            }
+        }
+        return events;
+    }
+
+    function formatIcsTime(date, timeStr) {
+        const [hour, minute] = timeStr.split(':');
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        return `${yyyy}${mm}${dd}T${hour}${minute}00`;
+    }
+
+    function generateUID() {
+        return 'xxxx-xxxx-4xxx-yxxx'.replace(/[xy]/g, c => {
+            let r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        }) + "@schedule.app";
+    }
+
+    generateBtn.addEventListener('click', function() {
+        const baseDateStr = document.getElementById('semesterStart').value;
+        const parts = baseDateStr.split('-');
+        const baseDate = new Date(parts[0], parts[1] - 1, parts[2]);
+
+        let ics = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Smart Class Schedule//CN\nCALSCALE:GREGORIAN\n";
+
+        parsedEvents.forEach(evt => {
+            const firstClassDate = new Date(baseDate.getTime());
+            firstClassDate.setDate(firstClassDate.getDate() + (evt.startWeek - 1) * 7 + evt.dayOffset);
+
+            const dtStart = formatIcsTime(firstClassDate, evt.startTime);
+            const dtEnd = formatIcsTime(firstClassDate, evt.endTime);
+            const count = evt.endWeek - evt.startWeek + 1;
+
+            ics += "BEGIN:VEVENT\n";
+            ics += `UID:${generateUID()}\n`;
+            ics += `SUMMARY:${evt.name}\n`;
+            ics += `DTSTART:${dtStart}\n`;
+            ics += `DTEND:${dtEnd}\n`;
+            ics += `RRULE:FREQ=WEEKLY;COUNT=${count}\n`;
+            if(evt.location) ics += `LOCATION:${evt.location}\n`;
+            if(evt.teacher) ics += `DESCRIPTION:教师：${evt.teacher}\\n周次：${evt.startWeek}-${evt.endWeek}周\n`;
+            ics += "END:VEVENT\n";
+        });
+
+        ics += "END:VCALENDAR";
+
+        const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.setAttribute('download', 'MySchedule.ics');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+</script>
+
+</body>
+</html>
