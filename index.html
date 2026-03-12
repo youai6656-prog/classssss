@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>华电/标准通用 课表导入系统</title>
+    <title>华电/通用 课表一键导入 Pro Max</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body {
@@ -89,7 +89,7 @@
         .preview-list {
             text-align: left;
             font-size: 13px;
-            max-height: 180px;
+            max-height: 200px;
             overflow-y: auto;
             margin-top: 10px;
             padding-left: 20px;
@@ -100,7 +100,7 @@
             border-radius: 8px;
             border: 1px solid #e5e5ea;
         }
-        .preview-list li { margin-bottom: 6px; }
+        .preview-list li { margin-bottom: 8px; }
         #generateBtn {
             background-color: #007aff;
             color: white;
@@ -121,7 +121,7 @@
 <body>
 
 <div class="container">
-    <h1>一键导入 iPhone 日历</h1>
+    <h1>一键精确导入日历</h1>
     
     <div class="form-group">
         <label for="semesterStart">第一周的星期一是哪天？</label>
@@ -130,13 +130,13 @@
 
     <div class="upload-area">
         <div class="upload-icon">📄</div>
-        <div class="upload-text">选择或拖拽 Excel 文件</div>
-        <div class="tips">支持标准的网格课表，完美兼容括号与特殊标记</div>
+        <div class="upload-text">选择或拖拽课表 (Excel/CSV)</div>
+        <div class="tips">已攻克 "([周])" 特殊后缀与老师重名 Bug</div>
         <input type="file" id="fileInput" accept=".xlsx, .xls, .csv">
     </div>
     
     <div id="statusArea"></div>
-    <button id="generateBtn">确认生成日历文件</button>
+    <button id="generateBtn">确认生成并平铺导入</button>
 </div>
 
 <script>
@@ -149,7 +149,7 @@
         if (!file) return;
 
         statusArea.style.display = 'block';
-        statusArea.innerHTML = "正在深度解析表格数据，请稍候...";
+        statusArea.innerHTML = "正在运行结构化引擎深度解析...";
         generateBtn.style.display = 'none';
 
         const reader = new FileReader();
@@ -162,36 +162,31 @@
             parsedEvents = autoExtractEvents(grid);
             
             if(parsedEvents.length > 0) {
-                let previewHtml = `✅ <b>解析成功！共识别 ${parsedEvents.length} 门课：</b><ul class="preview-list">`;
+                let previewHtml = `✅ <b>解析大成功！共识别 ${parsedEvents.length} 门课：</b><ul class="preview-list">`;
                 parsedEvents.forEach(evt => {
-                    // 简要展示识别到的周次
                     let wDisp = evt.weeks.length > 3 ? `${evt.weeks[0]}...${evt.weeks[evt.weeks.length-1]}` : evt.weeks.join(',');
-                    previewHtml += `<li><b>${evt.name}</b> (${evt.teacher})<br><span style="color:#666">第 ${wDisp} 周 | ${evt.location}</span></li>`;
+                    previewHtml += `<li><b>${evt.name}</b> (${evt.teacher || '无教师'})<br><span style="color:#666">第 ${wDisp} 周 | ${evt.location}</span></li>`;
                 });
                 previewHtml += `</ul>`;
                 statusArea.innerHTML = previewHtml;
                 generateBtn.style.display = 'block';
             } else {
-                statusArea.innerHTML = `❌ <b>解析失败</b><br>未能从表格中识别出课程，请检查格式。`;
+                statusArea.innerHTML = `❌ <b>解析失败</b><br>未找到有效的课程数据。`;
             }
         };
         reader.readAsArrayBuffer(file);
     });
 
-    // 针对学校系统高度特化的周次提取器
+    // 高度特化、绝对防错的周次解析器
     function parseWeeks(text) {
         let weeks = [];
-        let matchedStr = "";
-        
-        // 新增：特化兼容 "1-12([周])" 这种奇葩写法
-        const weekPattern = /([0-9,\s\-~—–]+)(?:周|\(\[周\]\)|\[周\]|\(周\))(?:\s*[(（]?(单|双|单周|双周)?[)）]?)?/;
+        // 强制要求：前面必须有一个数字开头！避免匹配到“周东”
+        const weekPattern = /([0-9][0-9,\-~—–]*)\s*(?:周|\(\[周\]\)|\[周\]|\(周\))(?:\s*[(（]?(单|双|单周|双周)?[)）]?)?/;
         const match = text.match(weekPattern);
 
         if (match) {
-            matchedStr = match[0];
-            const numStr = match[1].replace(/\s/g, '');
+            const numStr = match[1];
             const type = match[2] || "";
-            
             const parts = numStr.split(',');
             parts.forEach(part => {
                 if (part.match(/[-~—–]/)) {
@@ -209,28 +204,13 @@
                     if (!isNaN(w)) weeks.push(w);
                 }
             });
-        } else {
-            // 兼容没写“周”字的纯数字区间
-            const rangeRegex = /(?:第)?\s*\[?(\d+)\s*[-~—–至]\s*(\d+)\]?\s*[(（]?(单|双)?[)）]?/;
-            const rMatch = text.match(rangeRegex);
-            // 排除掉可能是节次的情况（例如 07-08节）
-            if (rMatch && !rMatch[0].includes(":") && !rMatch[0].includes("节") && !text.includes(rMatch[0] + "节")) {
-                matchedStr = rMatch[0];
-                let s = parseInt(rMatch[1]), e = parseInt(rMatch[2]), type = rMatch[3] || "";
-                for(let i = s; i <= e; i++) {
-                    if (type.includes("单") && i % 2 === 0) continue;
-                    if (type.includes("双") && i % 2 !== 0) continue;
-                    weeks.push(i);
-                }
-            }
         }
         
         if (weeks.length === 0) {
-            for(let i=1; i<=16; i++) weeks.push(i); // 最终兜底
+            for(let i=1; i<=16; i++) weeks.push(i);
         }
         
-        weeks = [...new Set(weeks)].sort((a,b)=>a-b);
-        return { weeks, matchedStr };
+        return [...new Set(weeks)].sort((a,b)=>a-b);
     }
 
     function autoExtractEvents(grid) {
@@ -265,23 +245,50 @@
                         let lines = courseStr.split('\n').map(s=>s.trim()).filter(s=>s);
                         if(lines.length < 1) return;
 
-                        let name = lines[0];
-                        let weekData = parseWeeks(courseStr);
+                        let weekIndex = -1;
+                        let weeks = [];
+                        // 强制必须以数字开头的正则
+                        const pattern = /([0-9][0-9,\-~—–]*)\s*(?:周|\(\[周\]\)|\[周\]|\(周\))/;
                         
-                        let teacher = "", loc = "";
-                        
-                        // 精准剔除匹配到“周次”和“节次”的那一行，剩下的就是老师和教室
-                        let remainingLines = lines.slice(1).filter(line => !line.includes(weekData.matchedStr));
-                        
-                        if (remainingLines.length >= 2) {
-                            teacher = remainingLines[0]; // 第二行通常是老师
-                            loc = remainingLines[remainingLines.length - 1]; // 最后一行通常是教室
-                        } else if (remainingLines.length === 1) {
-                            if (remainingLines[0].match(/楼|教室|教|操场|中心|阶梯/)) loc = remainingLines[0];
-                            else teacher = remainingLines[0];
+                        // 逐行扫描寻找周次，找到后依据它在行内的位置来拆分名字和老师
+                        for(let i=0; i<lines.length; i++) {
+                            if(pattern.test(lines[i])) {
+                                weekIndex = i;
+                                weeks = parseWeeks(lines[i]);
+                                break;
+                            }
                         }
 
-                        events.push({ name, dayOffset: dayCols[c], startTime: timeRows[r].start, endTime: timeRows[r].end, weeks: weekData.weeks, teacher, location: loc });
+                        let name = lines[0];
+                        let teacher = "";
+                        let loc = "";
+
+                        // 基于空间位置的解构法：名字在最上，老师在中间，教室在最下
+                        if (weekIndex !== -1) {
+                            if (weekIndex >= 2) {
+                                // 处理类似“体育(2) \n (足球)”这样多行的名字
+                                name = lines.slice(0, weekIndex - 1).join(" ");
+                                teacher = lines[weekIndex - 1]; // 紧靠着周次上方的一定是老师
+                            } else if (weekIndex === 1) {
+                                name = lines[0];
+                            }
+                            if (weekIndex + 1 < lines.length) {
+                                loc = lines.slice(weekIndex + 1).join(" "); // 周次下方的一定是教室
+                            }
+                        } else {
+                            name = lines[0];
+                            weeks = parseWeeks(courseStr); // 兜底
+                        }
+
+                        events.push({ 
+                            name, 
+                            dayOffset: dayCols[c], 
+                            startTime: timeRows[r].start, 
+                            endTime: timeRows[r].end, 
+                            weeks, 
+                            teacher, 
+                            location: loc 
+                        });
                     });
                 }
             }
@@ -307,14 +314,13 @@
     generateBtn.addEventListener('click', function() {
         const baseDateStr = document.getElementById('semesterStart').value;
         const parts = baseDateStr.split('-');
-        const baseDate = new Date(parts[0], parts[1] - 1, parts[2]); // 强制午夜零点
+        const baseDate = new Date(parts[0], parts[1] - 1, parts[2]); 
 
-        let ics = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Smart Class Schedule Max//CN\nCALSCALE:GREGORIAN\n";
+        let ics = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Smart Class Schedule Pro Max//CN\nCALSCALE:GREGORIAN\n";
 
         parsedEvents.forEach(evt => {
             const baseUID = generateUID();
             
-            // 将每一节课精准推算日期并平铺写入日历
             evt.weeks.forEach(w => {
                 const classDate = new Date(baseDate.getTime());
                 classDate.setDate(classDate.getDate() + (w - 1) * 7 + evt.dayOffset);
@@ -328,7 +334,7 @@
                 ics += `DTSTART:${dtStart}\n`;
                 ics += `DTEND:${dtEnd}\n`;
                 if(evt.location) ics += `LOCATION:${evt.location}\n`;
-                if(evt.teacher) ics += `DESCRIPTION:教师：${evt.teacher}\\n当前第 ${w} 周\n`;
+                if(evt.teacher) ics += `DESCRIPTION:教师：${evt.teacher}\\n进度：当前是第 ${w} 周\n`;
                 ics += "END:VEVENT\n";
             });
         });
@@ -338,7 +344,7 @@
         const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
         const link = document.createElement('a');
         link.href = window.URL.createObjectURL(blob);
-        link.setAttribute('download', 'MySchedule_Final.ics');
+        link.setAttribute('download', 'MySchedule_Ultimate.ics');
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
