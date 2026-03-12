@@ -8,7 +8,7 @@
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            /* 添加清新自然的风光背景图 */
+            /* 高清自然风光背景图 */
             background-image: url('https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80');
             background-size: cover;
             background-position: center;
@@ -22,15 +22,15 @@
             box-sizing: border-box;
         }
         .container {
-            /* 核心毛玻璃特效 (Glassmorphism) */
-            background: rgba(255, 255, 255, 0.65); /* 半透明白色 */
-            backdrop-filter: blur(16px); /* 背景模糊 */
-            -webkit-backdrop-filter: blur(16px); /* 兼容 Safari */
-            border: 1px solid rgba(255, 255, 255, 0.5); /* 柔和的高光边框 */
+            /* 降低透明度和模糊度，让背景图更清晰透彻 */
+            background: rgba(255, 255, 255, 0.35); 
+            backdrop-filter: blur(6px); /* 从 16px 降到 6px，更加清晰 */
+            -webkit-backdrop-filter: blur(6px);
+            border: 1px solid rgba(255, 255, 255, 0.6); 
             
             padding: 30px;
             border-radius: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15); /* 加深一点阴影增加立体感 */
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); 
             width: 100%;
             max-width: 420px;
         }
@@ -40,37 +40,38 @@
             margin-top: 0;
             text-align: center;
             margin-bottom: 24px;
-            text-shadow: 0 2px 4px rgba(255,255,255,0.5); /* 文字增加可读性 */
+            text-shadow: 0 2px 5px rgba(255,255,255,0.8); /* 增强文字发光，保证在清晰背景下依然易读 */
         }
         .form-group { margin-bottom: 20px; }
         label {
             display: block;
-            font-size: 14px;
-            color: #333;
+            font-size: 15px;
+            color: #1c1c1e;
             margin-bottom: 8px;
             font-weight: 600;
+            text-shadow: 0 1px 3px rgba(255,255,255,0.7);
         }
         input[type="date"] {
             width: 100%;
             padding: 14px;
-            /* 输入框半透明化 */
-            background-color: rgba(255, 255, 255, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.6);
+            background-color: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.8);
             border-radius: 12px;
             font-size: 16px;
             color: #1c1c1e;
             box-sizing: border-box;
             outline: none;
             transition: all 0.3s ease;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
         }
         input[type="date"]:focus {
-            background-color: rgba(255, 255, 255, 0.8);
+            background-color: rgba(255, 255, 255, 0.9);
             border-color: #007aff;
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
         }
         .upload-area {
-            border: 2px dashed rgba(0, 122, 255, 0.5);
-            /* 上传区半透明化 */
-            background-color: rgba(255, 255, 255, 0.3);
+            border: 2px dashed rgba(0, 122, 255, 0.6);
+            background-color: rgba(255, 255, 255, 0.4);
             border-radius: 16px;
             padding: 40px 20px;
             text-align: center;
@@ -78,8 +79,8 @@
             position: relative;
             transition: all 0.2s ease;
         }
-        .upload-area:hover { background-color: rgba(255, 255, 255, 0.5); }
-        .upload-area:active { background-color: rgba(255, 255, 255, 0.6); }
+        .upload-area:hover { background-color: rgba(255, 255, 255, 0.6); }
+        .upload-area:active { background-color: rgba(255, 255, 255, 0.7); }
         .upload-area input[type="file"] {
             position: absolute;
             width: 100%;
@@ -88,21 +89,21 @@
             opacity: 0;
             cursor: pointer;
         }
-        .upload-icon { font-size: 32px; margin-bottom: 10px; }
-        .upload-text { color: #007aff; font-weight: 600; font-size: 17px; text-shadow: 0 1px 2px rgba(255,255,255,0.8); }
+        .upload-icon { font-size: 38px; margin-bottom: 10px; }
+        .upload-text { color: #007aff; font-weight: 600; font-size: 17px; text-shadow: 0 1px 2px rgba(255,255,255,0.9); }
         .tips {
             font-size: 12px;
-            color: #555;
+            color: #333;
             margin-top: 10px;
             line-height: 1.5;
+            font-weight: 500;
         }
         #statusArea {
             margin-top: 20px;
             padding: 15px;
             border-radius: 12px;
-            /* 状态提示区半透明化 */
-            background-color: rgba(255, 255, 255, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.5);
+            background-color: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.8);
             font-size: 14px;
             color: #1c1c1e;
             display: none;
@@ -115,8 +116,7 @@
             margin-top: 10px;
             padding-left: 20px;
             color: #222;
-            /* 列表区半透明化 */
-            background: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.7);
             padding-top: 10px;
             padding-bottom: 10px;
             border-radius: 8px;
@@ -145,9 +145,8 @@
             margin-top: 15px;
             font-size: 13px;
             color: #d97700;
-            /* 安卓提示框半透明化 */
-            background: rgba(255, 245, 229, 0.7);
-            border: 1px solid rgba(255, 149, 0, 0.3);
+            background: rgba(255, 245, 229, 0.85);
+            border: 1px solid rgba(255, 149, 0, 0.4);
             padding: 12px;
             border-radius: 8px;
             text-align: center;
@@ -157,24 +156,24 @@
 <body>
 
 <div class="container">
-    <h1>一键精确导入日历</h1>
+    <h1>✨ 一键精准导入日历 📅</h1>
     
     <div class="form-group">
-        <label for="semesterStart">第一周的星期一是哪天？</label>
+        <label for="semesterStart">🌸 第一周的星期一是哪天？</label>
         <input type="date" id="semesterStart" value="2026-03-02">
     </div>
 
     <div class="upload-area">
-        <div class="upload-icon">📄</div>
-        <div class="upload-text">选择或拖拽课表 (Excel/CSV)</div>
-        <div class="tips">支持标准的网格课表，完美兼容全系手机</div>
+        <div class="upload-icon">📥</div>
+        <div class="upload-text">点击或拖拽课表文件</div>
+        <div class="tips">🌟 支持 Excel/CSV 格式，完美兼容全系手机</div>
         <input type="file" id="fileInput" accept=".xlsx, .xls, .csv">
     </div>
     
     <div id="statusArea"></div>
-    <button id="generateBtn">生成日历并导入</button>
+    <button id="generateBtn">🚀 确认生成并平铺导入</button>
     <div id="androidTip" class="android-tip">
-        💡 <b>安卓用户提示：</b><br>点击按钮后，浏览器会下载一个 <b>.ics</b> 文件。请在通知栏或下载管理中<b>点击打开该文件</b>，即可将其导入到手机日历中。
+        🤖 <b>安卓用户小贴士：</b><br>点击上方按钮后，浏览器会下载一个 <b>.ics</b> 文件。请在通知栏或下载管理中<b>点击打开该文件</b>，即可一键加入手机日历中哦！🎈
     </div>
 </div>
 
@@ -191,7 +190,7 @@
         if (!file) return;
 
         statusArea.style.display = 'block';
-        statusArea.innerHTML = "正在运行结构化引擎深度解析...";
+        statusArea.innerHTML = "⏳ 正在运行结构化引擎深度解析...";
         generateBtn.style.display = 'none';
         androidTip.style.display = 'none';
 
@@ -208,14 +207,14 @@
                 let previewHtml = `✅ <b>解析大成功！共识别 ${parsedEvents.length} 门课：</b><ul class="preview-list">`;
                 parsedEvents.forEach(evt => {
                     let wDisp = evt.weeks.length > 3 ? `${evt.weeks[0]}...${evt.weeks[evt.weeks.length-1]}` : evt.weeks.join(',');
-                    previewHtml += `<li><b>${evt.name}</b> (${evt.teacher || '无教师'})<br><span style="color:#555">第 ${wDisp} 周 | ${evt.location}</span></li>`;
+                    previewHtml += `<li>🎓 <b>${evt.name}</b> (${evt.teacher || '无教师'})<br><span style="color:#555">⏳ 第 ${wDisp} 周 | 📍 ${evt.location || '未指定教室'}</span></li>`;
                 });
                 previewHtml += `</ul>`;
                 statusArea.innerHTML = previewHtml;
                 generateBtn.style.display = 'block';
                 if (isAndroid) androidTip.style.display = 'block';
             } else {
-                statusArea.innerHTML = `❌ <b>解析失败</b><br>未找到有效的课程数据。`;
+                statusArea.innerHTML = `❌ <b>解析失败</b><br>哎呀，没有找到有效的课程数据，请检查表格格式哦。`;
             }
         };
         reader.readAsArrayBuffer(file);
@@ -374,7 +373,7 @@
                 ics += `DTEND;TZID=Asia/Shanghai:${dtEnd}\n`;
                 
                 if(evt.location) ics += `LOCATION:${evt.location}\n`;
-                if(evt.teacher) ics += `DESCRIPTION:教师：${evt.teacher}\\n进度：当前是第 ${w} 周\n`;
+                if(evt.teacher) ics += `DESCRIPTION:👩‍🏫 教师：${evt.teacher}\\n⏳ 进度：当前是第 ${w} 周\n`;
                 ics += "END:VEVENT\n";
             });
         });
@@ -393,4 +392,3 @@
 
 </body>
 </html>
-
