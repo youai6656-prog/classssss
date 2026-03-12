@@ -3,12 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全平台课表导入系统 (iOS/安卓通用)</title>
+    <title>全平台课表导入系统 (美化版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f2f2f7;
+            /* 添加清新自然的风光背景图 */
+            background-image: url('https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -18,10 +22,15 @@
             box-sizing: border-box;
         }
         .container {
-            background: white;
+            /* 核心毛玻璃特效 (Glassmorphism) */
+            background: rgba(255, 255, 255, 0.65); /* 半透明白色 */
+            backdrop-filter: blur(16px); /* 背景模糊 */
+            -webkit-backdrop-filter: blur(16px); /* 兼容 Safari */
+            border: 1px solid rgba(255, 255, 255, 0.5); /* 柔和的高光边框 */
+            
             padding: 30px;
             border-radius: 20px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15); /* 加深一点阴影增加立体感 */
             width: 100%;
             max-width: 420px;
         }
@@ -31,28 +40,37 @@
             margin-top: 0;
             text-align: center;
             margin-bottom: 24px;
+            text-shadow: 0 2px 4px rgba(255,255,255,0.5); /* 文字增加可读性 */
         }
         .form-group { margin-bottom: 20px; }
         label {
             display: block;
             font-size: 14px;
-            color: #8e8e93;
+            color: #333;
             margin-bottom: 8px;
-            font-weight: 500;
+            font-weight: 600;
         }
         input[type="date"] {
             width: 100%;
             padding: 14px;
-            border: 1px solid #e5e5ea;
+            /* 输入框半透明化 */
+            background-color: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.6);
             border-radius: 12px;
             font-size: 16px;
+            color: #1c1c1e;
             box-sizing: border-box;
             outline: none;
-            background-color: #fafafa;
+            transition: all 0.3s ease;
+        }
+        input[type="date"]:focus {
+            background-color: rgba(255, 255, 255, 0.8);
+            border-color: #007aff;
         }
         .upload-area {
-            border: 2px dashed #007aff;
-            background-color: #f0f8ff;
+            border: 2px dashed rgba(0, 122, 255, 0.5);
+            /* 上传区半透明化 */
+            background-color: rgba(255, 255, 255, 0.3);
             border-radius: 16px;
             padding: 40px 20px;
             text-align: center;
@@ -60,7 +78,8 @@
             position: relative;
             transition: all 0.2s ease;
         }
-        .upload-area:active { background-color: #e0f0ff; }
+        .upload-area:hover { background-color: rgba(255, 255, 255, 0.5); }
+        .upload-area:active { background-color: rgba(255, 255, 255, 0.6); }
         .upload-area input[type="file"] {
             position: absolute;
             width: 100%;
@@ -70,10 +89,10 @@
             cursor: pointer;
         }
         .upload-icon { font-size: 32px; margin-bottom: 10px; }
-        .upload-text { color: #007aff; font-weight: 600; font-size: 17px; }
+        .upload-text { color: #007aff; font-weight: 600; font-size: 17px; text-shadow: 0 1px 2px rgba(255,255,255,0.8); }
         .tips {
             font-size: 12px;
-            color: #8e8e93;
+            color: #555;
             margin-top: 10px;
             line-height: 1.5;
         }
@@ -81,7 +100,9 @@
             margin-top: 20px;
             padding: 15px;
             border-radius: 12px;
-            background-color: #f2f2f7;
+            /* 状态提示区半透明化 */
+            background-color: rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.5);
             font-size: 14px;
             color: #1c1c1e;
             display: none;
@@ -93,12 +114,13 @@
             overflow-y: auto;
             margin-top: 10px;
             padding-left: 20px;
-            color: #333;
-            background: #fff;
+            color: #222;
+            /* 列表区半透明化 */
+            background: rgba(255, 255, 255, 0.5);
             padding-top: 10px;
             padding-bottom: 10px;
             border-radius: 8px;
-            border: 1px solid #e5e5ea;
+            border: 1px solid rgba(255, 255, 255, 0.5);
         }
         .preview-list li { margin-bottom: 8px; }
         #generateBtn {
@@ -114,14 +136,18 @@
             margin-top: 20px;
             display: none;
             box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+            transition: all 0.2s;
         }
+        #generateBtn:hover { background-color: #0066d6; }
         #generateBtn:active { transform: scale(0.98); }
         .android-tip {
             display: none;
             margin-top: 15px;
             font-size: 13px;
-            color: #ff9500;
-            background: #fff5e5;
+            color: #d97700;
+            /* 安卓提示框半透明化 */
+            background: rgba(255, 245, 229, 0.7);
+            border: 1px solid rgba(255, 149, 0, 0.3);
             padding: 12px;
             border-radius: 8px;
             text-align: center;
@@ -131,7 +157,7 @@
 <body>
 
 <div class="container">
-    <h1>全平台一键导入日历</h1>
+    <h1>一键精确导入日历</h1>
     
     <div class="form-group">
         <label for="semesterStart">第一周的星期一是哪天？</label>
@@ -140,8 +166,8 @@
 
     <div class="upload-area">
         <div class="upload-icon">📄</div>
-        <div class="upload-text">选择或拖拽课表文件</div>
-        <div class="tips">支持 Excel/CSV，完美兼容苹果与安卓全系手机</div>
+        <div class="upload-text">选择或拖拽课表 (Excel/CSV)</div>
+        <div class="tips">支持标准的网格课表，完美兼容全系手机</div>
         <input type="file" id="fileInput" accept=".xlsx, .xls, .csv">
     </div>
     
@@ -158,7 +184,6 @@
     const generateBtn = document.getElementById('generateBtn');
     const androidTip = document.getElementById('androidTip');
 
-    // 检测是否为安卓设备以显示引导提示
     const isAndroid = /Android/i.test(navigator.userAgent);
 
     document.getElementById('fileInput').addEventListener('change', function(e) {
@@ -183,12 +208,12 @@
                 let previewHtml = `✅ <b>解析大成功！共识别 ${parsedEvents.length} 门课：</b><ul class="preview-list">`;
                 parsedEvents.forEach(evt => {
                     let wDisp = evt.weeks.length > 3 ? `${evt.weeks[0]}...${evt.weeks[evt.weeks.length-1]}` : evt.weeks.join(',');
-                    previewHtml += `<li><b>${evt.name}</b> (${evt.teacher || '无教师'})<br><span style="color:#666">第 ${wDisp} 周 | ${evt.location}</span></li>`;
+                    previewHtml += `<li><b>${evt.name}</b> (${evt.teacher || '无教师'})<br><span style="color:#555">第 ${wDisp} 周 | ${evt.location}</span></li>`;
                 });
                 previewHtml += `</ul>`;
                 statusArea.innerHTML = previewHtml;
                 generateBtn.style.display = 'block';
-                if (isAndroid) androidTip.style.display = 'block'; // 安卓设备显示操作指南
+                if (isAndroid) androidTip.style.display = 'block';
             } else {
                 statusArea.innerHTML = `❌ <b>解析失败</b><br>未找到有效的课程数据。`;
             }
@@ -314,7 +339,6 @@
         const yyyy = date.getFullYear();
         const mm = String(date.getMonth() + 1).padStart(2, '0');
         const dd = String(date.getDate()).padStart(2, '0');
-        // 返回纯时间字符串，交由日历生成时绑定绝对时区
         return `${yyyy}${mm}${dd}T${hour}${minute}00`;
     }
 
@@ -330,7 +354,6 @@
         const parts = baseDateStr.split('-');
         const baseDate = new Date(parts[0], parts[1] - 1, parts[2]); 
 
-        // 核心改动 1：在 ICS 头部强行注入 Asia/Shanghai 时区定义
         let ics = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Smart Class Schedule CrossPlatform//CN\nCALSCALE:GREGORIAN\n";
         ics += "BEGIN:VTIMEZONE\nTZID:Asia/Shanghai\nX-LIC-LOCATION:Asia/Shanghai\nBEGIN:STANDARD\nTZOFFSETFROM:+0800\nTZOFFSETTO:+0800\nTZNAME:CST\nDTSTART:19700101T000000\nEND:STANDARD\nEND:VTIMEZONE\n";
 
@@ -347,8 +370,6 @@
                 ics += "BEGIN:VEVENT\n";
                 ics += `UID:${w}-${baseUID}\n`;
                 ics += `SUMMARY:${evt.name}\n`;
-                
-                // 核心改动 2：将所有课程的开始和结束时间死死绑定在 Asia/Shanghai
                 ics += `DTSTART;TZID=Asia/Shanghai:${dtStart}\n`;
                 ics += `DTEND;TZID=Asia/Shanghai:${dtEnd}\n`;
                 
